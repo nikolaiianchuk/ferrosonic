@@ -101,7 +101,9 @@ fn render_playlists(frame: &mut Frame, area: Rect, state: &mut AppState, colors:
     }
 
     let mut list_state = ListState::default();
-    list_state.select(playlists.selected_playlist);
+    if focused {
+        list_state.select(playlists.selected_playlist);
+    }
 
     frame.render_stateful_widget(list, area, &mut list_state);
     state.playlists.playlist_scroll_offset = list_state.offset();
@@ -190,7 +192,9 @@ fn render_songs(frame: &mut Frame, area: Rect, state: &mut AppState, colors: &Th
     }
 
     let mut list_state = ListState::default();
-    list_state.select(playlists.selected_song);
+    if focused {
+        list_state.select(playlists.selected_song);
+    }
 
     frame.render_stateful_widget(list, area, &mut list_state);
     state.playlists.song_scroll_offset = list_state.offset();
