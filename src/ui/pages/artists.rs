@@ -47,7 +47,7 @@ pub fn build_tree_items(state: &AppState) -> Vec<TreeItem> {
         // If expanded, add albums sorted by year (oldest first)
         if is_expanded {
             if let Some(albums) = artists.albums_cache.get(&artist.id) {
-                let mut sorted_albums: Vec<Album> = albums.iter().cloned().collect();
+                let mut sorted_albums: Vec<Album> = albums.to_vec();
                 sorted_albums.sort_by(|a, b| {
                     // Albums with no year go last
                     match (a.year, b.year) {

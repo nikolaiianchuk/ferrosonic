@@ -215,7 +215,7 @@ pub fn load_themes() -> Vec<ThemeData> {
                 .filter(|e| {
                     e.path()
                         .extension()
-                        .map_or(false, |ext| ext == "toml")
+                        .is_some_and(|ext| ext == "toml")
                 })
                 .collect();
             entries.sort_by_key(|e| e.file_name());
@@ -248,7 +248,7 @@ pub fn load_themes() -> Vec<ThemeData> {
 
 /// Convert a filename stem like "tokyo-night" or "rose_pine" to "Tokyo Night" or "Rose Pine"
 fn titlecase_filename(s: &str) -> String {
-    s.split(|c: char| c == '-' || c == '_')
+    s.split(['-', '_'])
         .filter(|w| !w.is_empty())
         .map(|word| {
             let mut chars = word.chars();

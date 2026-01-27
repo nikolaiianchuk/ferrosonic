@@ -157,28 +157,26 @@ impl App {
 
                                     if was_expanded {
                                         state.artists.expanded.remove(&artist_id);
-                                    } else {
-                                        if !state.artists.albums_cache.contains_key(&artist_id) {
-                                            drop(state);
-                                            if let Some(ref client) = self.subsonic {
-                                                match client.get_artist(&artist_id).await {
-                                                    Ok((_artist, albums)) => {
-                                                        let mut state = self.state.write().await;
-                                                        let count = albums.len();
-                                                        state.artists.albums_cache.insert(artist_id.clone(), albums);
-                                                        state.artists.expanded.insert(artist_id);
-                                                        info!("Loaded {} albums for {}", count, artist_name);
-                                                    }
-                                                    Err(e) => {
-                                                        let mut state = self.state.write().await;
-                                                        state.notify_error(format!("Failed to load: {}", e));
-                                                    }
+                                    } else if !state.artists.albums_cache.contains_key(&artist_id) {
+                                        drop(state);
+                                        if let Some(ref client) = self.subsonic {
+                                            match client.get_artist(&artist_id).await {
+                                                Ok((_artist, albums)) => {
+                                                    let mut state = self.state.write().await;
+                                                    let count = albums.len();
+                                                    state.artists.albums_cache.insert(artist_id.clone(), albums);
+                                                    state.artists.expanded.insert(artist_id);
+                                                    info!("Loaded {} albums for {}", count, artist_name);
+                                                }
+                                                Err(e) => {
+                                                    let mut state = self.state.write().await;
+                                                    state.notify_error(format!("Failed to load: {}", e));
                                                 }
                                             }
-                                            return Ok(());
-                                        } else {
-                                            state.artists.expanded.insert(artist_id);
                                         }
+                                        return Ok(());
+                                    } else {
+                                        state.artists.expanded.insert(artist_id);
                                     }
                                 }
                                 TreeItem::Album { album } => {
@@ -296,13 +294,11 @@ impl App {
                             state.notify(format!("Added to queue: {}", title));
                         }
                     }
-                } else {
-                    if !state.artists.songs.is_empty() {
-                        let count = state.artists.songs.len();
-                        let songs = state.artists.songs.clone();
-                        state.queue.extend(songs);
-                        state.notify(format!("Added {} songs to queue", count));
-                    }
+                } else if !state.artists.songs.is_empty() {
+                    let count = state.artists.songs.len();
+                    let songs = state.artists.songs.clone();
+                    state.queue.extend(songs);
+                    state.notify(format!("Added {} songs to queue", count));
                 }
             }
             KeyCode::Char('n') => {
@@ -315,15 +311,13 @@ impl App {
                             state.notify(format!("Playing next: {}", title));
                         }
                     }
-                } else {
-                    if !state.artists.songs.is_empty() {
-                        let count = state.artists.songs.len();
-                        let songs: Vec<_> = state.artists.songs.iter().cloned().collect();
-                        for (i, song) in songs.into_iter().enumerate() {
-                            state.queue.insert(insert_pos + i, song);
-                        }
-                        state.notify(format!("Playing {} songs next", count));
+                } else if !state.artists.songs.is_empty() {
+                    let count = state.artists.songs.len();
+                    let songs: Vec<_> = state.artists.songs.to_vec();
+                    for (i, song) in songs.into_iter().enumerate() {
+                        state.queue.insert(insert_pos + i, song);
                     }
+                    state.notify(format!("Playing {} songs next", count));
                 }
             }
             _ => {}

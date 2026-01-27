@@ -143,7 +143,7 @@ impl App {
 
                 // Second click = activate (same as Enter)
                 let is_second_click = was_selected
-                    && self.last_click.map_or(false, |(lx, ly, t)| {
+                    && self.last_click.is_some_and(|(lx, ly, t)| {
                         lx == x && ly == y && t.elapsed().as_millis() < 500
                     });
 
@@ -157,29 +157,27 @@ impl App {
 
                             if was_expanded {
                                 state.artists.expanded.remove(&artist_id);
-                            } else {
-                                if !state.artists.albums_cache.contains_key(&artist_id) {
-                                    drop(state);
-                                    if let Some(ref client) = self.subsonic {
-                                        match client.get_artist(&artist_id).await {
-                                            Ok((_artist, albums)) => {
-                                                let mut state = self.state.write().await;
-                                                let count = albums.len();
-                                                state.artists.albums_cache.insert(artist_id.clone(), albums);
-                                                state.artists.expanded.insert(artist_id);
-                                                tracing::info!("Loaded {} albums for {}", count, artist_name);
-                                            }
-                                            Err(e) => {
-                                                let mut state = self.state.write().await;
-                                                state.notify_error(format!("Failed to load: {}", e));
-                                            }
+                            } else if !state.artists.albums_cache.contains_key(&artist_id) {
+                                drop(state);
+                                if let Some(ref client) = self.subsonic {
+                                    match client.get_artist(&artist_id).await {
+                                        Ok((_artist, albums)) => {
+                                            let mut state = self.state.write().await;
+                                            let count = albums.len();
+                                            state.artists.albums_cache.insert(artist_id.clone(), albums);
+                                            state.artists.expanded.insert(artist_id);
+                                            tracing::info!("Loaded {} albums for {}", count, artist_name);
+                                        }
+                                        Err(e) => {
+                                            let mut state = self.state.write().await;
+                                            state.notify_error(format!("Failed to load: {}", e));
                                         }
                                     }
-                                    self.last_click = Some((x, y, std::time::Instant::now()));
-                                    return Ok(());
-                                } else {
-                                    state.artists.expanded.insert(artist_id);
                                 }
+                                self.last_click = Some((x, y, std::time::Instant::now()));
+                                return Ok(());
+                            } else {
+                                state.artists.expanded.insert(artist_id);
                             }
                         }
                         TreeItem::Album { album } => {
@@ -266,7 +264,7 @@ impl App {
                 state.artists.selected_song = Some(item_index);
 
                 let is_second_click = was_selected
-                    && self.last_click.map_or(false, |(lx, ly, t)| {
+                    && self.last_click.is_some_and(|(lx, ly, t)| {
                         lx == x && ly == y && t.elapsed().as_millis() < 500
                     });
 
@@ -322,7 +320,7 @@ impl App {
             state.queue_state.selected = Some(item_index);
 
             let is_second_click = was_selected
-                && self.last_click.map_or(false, |(_, ly, t)| {
+                && self.last_click.is_some_and(|(_, ly, t)| {
                     ly == y && t.elapsed().as_millis() < 500
                 });
 
@@ -359,7 +357,7 @@ impl App {
                 state.playlists.selected_playlist = Some(item_index);
 
                 let is_second_click = was_selected
-                    && self.last_click.map_or(false, |(lx, ly, t)| {
+                    && self.last_click.is_some_and(|(lx, ly, t)| {
                         lx == x && ly == y && t.elapsed().as_millis() < 500
                     });
 
@@ -401,7 +399,7 @@ impl App {
                 state.playlists.selected_song = Some(item_index);
 
                 let is_second_click = was_selected
-                    && self.last_click.map_or(false, |(lx, ly, t)| {
+                    && self.last_click.is_some_and(|(lx, ly, t)| {
                         lx == x && ly == y && t.elapsed().as_millis() < 500
                     });
 
@@ -432,11 +430,9 @@ impl App {
                             state.artists.selected_index = Some(sel - 1);
                         }
                     }
-                } else {
-                    if let Some(sel) = state.artists.selected_song {
-                        if sel > 0 {
-                            state.artists.selected_song = Some(sel - 1);
-                        }
+                } else if let Some(sel) = state.artists.selected_song {
+                    if sel > 0 {
+                        state.artists.selected_song = Some(sel - 1);
                     }
                 }
             }
@@ -456,11 +452,9 @@ impl App {
                             state.playlists.selected_playlist = Some(sel - 1);
                         }
                     }
-                } else {
-                    if let Some(sel) = state.playlists.selected_song {
-                        if sel > 0 {
-                            state.playlists.selected_song = Some(sel - 1);
-                        }
+                } else if let Some(sel) = state.playlists.selected_song {
+                    if sel > 0 {
+                        state.playlists.selected_song = Some(sel - 1);
                     }
                 }
             }

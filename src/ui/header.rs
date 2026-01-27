@@ -38,13 +38,11 @@ impl Widget for Header {
         let chunks = Layout::horizontal([Constraint::Min(40), Constraint::Length(30)]).split(area);
 
         // Page tabs
-        let titles: Vec<Line> = vec![
-            Page::Artists,
+        let titles: Vec<Line> = [Page::Artists,
             Page::Queue,
             Page::Playlists,
             Page::Server,
-            Page::Settings,
-        ]
+            Page::Settings]
         .iter()
         .map(|p: &Page| Line::from(format!("{} {}", p.shortcut(), p.label())))
         .collect();
