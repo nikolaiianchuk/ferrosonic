@@ -54,7 +54,7 @@ echo "alongside the now-playing bar. It is not required but adds a nice"
 echo "visual element that changes color with your selected theme."
 echo ""
 printf "Install cava? [y/N] "
-read -r answer
+read -r answer </dev/tty
 if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
     if command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --needed --noconfirm cava
