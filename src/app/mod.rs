@@ -9,6 +9,8 @@ mod input_queue;
 mod input_server;
 mod input_settings;
 mod mouse;
+mod mouse_artists;
+mod mouse_playlists;
 mod playback;
 pub mod state;
 
