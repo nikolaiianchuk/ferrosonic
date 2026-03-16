@@ -39,7 +39,7 @@ Ferrosonic requires the following at runtime:
 
 ### macOS
 
-Install dependencies via Homebrew, then download the latest precompiled binary:
+Install dependencies via Homebrew:
 
 ```bash
 brew install mpv cava
