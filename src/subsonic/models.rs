@@ -215,6 +215,19 @@ pub struct PlaylistDetail {
     pub entry: Vec<Child>,
 }
 
+/// Random songs response
+#[derive(Debug, Deserialize)]
+pub struct RandomSongsData {
+    #[serde(rename = "randomSongs")]
+    pub random_songs: RandomSongsInner,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RandomSongsInner {
+    #[serde(default)]
+    pub song: Vec<Child>,
+}
+
 /// Ping response (for testing connection)
 #[derive(Debug, Deserialize)]
 pub struct PingData {}

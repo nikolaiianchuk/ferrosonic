@@ -16,14 +16,16 @@ pub struct Header {
     current_page: Page,
     playback_state: PlaybackState,
     colors: ThemeColors,
+    volume: i32,
 }
 
 impl Header {
-    pub fn new(current_page: Page, playback_state: PlaybackState, colors: ThemeColors) -> Self {
+    pub fn new(current_page: Page, playback_state: PlaybackState, colors: ThemeColors, volume: i32) -> Self {
         Self {
             current_page,
             playback_state,
             colors,
+            volume,
         }
     }
 }
@@ -87,8 +89,28 @@ impl Widget for Header {
 
         // Right-align controls - " ⏮  ▶  ⏸  ⏹  ⏭ " = 5*3 + 4*1 = 19
         let controls_width = 19;
-        let x = chunks[1].x + chunks[1].width.saturating_sub(controls_width);
-        buf.set_line(x, chunks[1].y, &controls, controls_width);
+        let controls_x = chunks[1].x + chunks[1].width.saturating_sub(controls_width);
+        buf.set_line(controls_x, chunks[1].y, &controls, controls_width);
+
+        // Volume display just to the left of controls
+        let vol_str = format!("{}%", self.volume);
+        let vol_label = "vol:";
+        let vol_total = vol_label.len() + vol_str.len(); // e.g. "vol:75%" = 7
+        let vol_x = controls_x.saturating_sub(vol_total as u16 + 1);
+        if vol_x >= chunks[1].x {
+            buf.set_string(
+                vol_x,
+                chunks[1].y,
+                vol_label,
+                Style::default().fg(self.colors.muted),
+            );
+            buf.set_string(
+                vol_x + vol_label.len() as u16,
+                chunks[1].y,
+                &vol_str,
+                Style::default().fg(self.colors.accent),
+            );
+        }
     }
 }
 

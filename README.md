@@ -39,6 +39,16 @@ Ferrosonic requires the following at runtime:
 | **D-Bus** | MPRIS2 desktop media controls | Recommended |
 | **cava** | Audio visualizer | Optional |
 
+### macOS
+
+Install dependencies via Homebrew, then download the latest precompiled binary:
+
+```bash
+brew install mpv cava
+```
+
+Then download the binary from the [releases page](https://github.com/jaidaken/ferrosonic/releases) and place it in your `$PATH`.
+
 ### Quick Install
 
 Supports Arch, Fedora, and Debian/Ubuntu. Installs runtime dependencies, downloads the latest precompiled binary, and installs to `/usr/local/bin/`:

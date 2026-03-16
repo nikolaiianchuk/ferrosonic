@@ -2,6 +2,7 @@
 
 pub mod actions;
 mod cava;
+mod cover_art;
 mod input;
 mod input_artists;
 mod input_playlists;

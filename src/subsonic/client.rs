@@ -278,6 +278,35 @@ impl SubsonicClient {
         Ok((playlist, detail.entry))
     }
 
+    /// Get raw cover art bytes for an item
+    pub async fn get_cover_art(&self, id: &str, size: u32) -> Result<Vec<u8>, SubsonicError> {
+        let mut url = self.build_url(&format!("getCoverArt?id={}&size={}", id, size))?;
+        // getCoverArt doesn't use the standard JSON wrapper — it returns raw image bytes
+        // Remove the f=json param that build_url adds
+        let params: Vec<(String, String)> = url
+            .query_pairs()
+            .filter(|(k, _)| k != "f")
+            .map(|(k, v)| (k.into_owned(), v.into_owned()))
+            .collect();
+        url.query_pairs_mut().clear();
+        for (k, v) in params {
+            url.query_pairs_mut().append_pair(&k, &v);
+        }
+        let response = self.http.get(url).send().await?;
+        let bytes = response.bytes().await?;
+        Ok(bytes.to_vec())
+    }
+
+    /// Get random songs from the server
+    pub async fn get_random_songs(&self, size: u32) -> Result<Vec<Child>, SubsonicError> {
+        let data: RandomSongsData = self
+            .request(&format!("getRandomSongs?size={}", size))
+            .await?;
+        let songs = data.random_songs.song;
+        debug!("Fetched {} random songs", songs.len());
+        Ok(songs)
+    }
+
     /// Get stream URL for a song
     ///
     /// Returns the full URL with authentication that can be passed to MPV

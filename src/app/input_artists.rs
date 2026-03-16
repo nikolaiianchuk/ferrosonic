@@ -69,7 +69,7 @@ impl App {
                         state.artists.selected_index = Some(0);
                     }
                     // Preview album songs in right pane
-                    let album_id = state
+                    let selected_album_id = state
                         .artists
                         .selected_index
                         .and_then(|i| tree_items.get(i))
@@ -77,13 +77,18 @@ impl App {
                             TreeItem::Album { album } => Some(album.id.clone()),
                             _ => None,
                         });
-                    if let Some(album_id) = album_id {
+                    if let Some(album_id) = selected_album_id {
                         drop(state);
                         if let Some(ref client) = self.subsonic {
                             if let Ok((_album, songs)) = client.get_album(&album_id).await {
+                                let cover_art_id = songs.first().and_then(|s| s.cover_art.clone());
                                 let mut state = self.state.write().await;
                                 state.artists.songs = songs;
                                 state.artists.selected_song = Some(0);
+                                drop(state);
+                                if let Some(id) = cover_art_id {
+                                    self.fetch_cover_art(id);
+                                }
                             }
                         }
                         return Ok(());
@@ -112,7 +117,7 @@ impl App {
                         state.artists.selected_index = Some(0);
                     }
                     // Preview album songs in right pane
-                    let album_id = state
+                    let selected_album_id = state
                         .artists
                         .selected_index
                         .and_then(|i| tree_items.get(i))
@@ -120,13 +125,18 @@ impl App {
                             TreeItem::Album { album } => Some(album.id.clone()),
                             _ => None,
                         });
-                    if let Some(album_id) = album_id {
+                    if let Some(album_id) = selected_album_id {
                         drop(state);
                         if let Some(ref client) = self.subsonic {
                             if let Ok((_album, songs)) = client.get_album(&album_id).await {
+                                let cover_art_id = songs.first().and_then(|s| s.cover_art.clone());
                                 let mut state = self.state.write().await;
                                 state.artists.songs = songs;
                                 state.artists.selected_song = Some(0);
+                                drop(state);
+                                if let Some(id) = cover_art_id {
+                                    self.fetch_cover_art(id);
+                                }
                             }
                         }
                         return Ok(());

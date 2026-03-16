@@ -70,7 +70,7 @@ pub fn draw(frame: &mut Frame, state: &mut AppState) {
 
     // Render header
     let colors = *state.settings_state.theme_colors();
-    let header = Header::new(state.page, state.now_playing.state, colors);
+    let header = Header::new(state.page, state.now_playing.state, colors, state.volume);
     frame.render_widget(header, header_area);
 
     // Render cava visualizer if active

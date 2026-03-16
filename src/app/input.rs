@@ -120,6 +120,28 @@ impl App {
                 }
                 return Ok(());
             }
+            // Volume controls
+            (KeyCode::Char('+'), _) | (KeyCode::Char('='), KeyModifiers::NONE) => {
+                let new_vol = (state.volume + 5).min(100);
+                state.volume = new_vol;
+                state.notify(format!("Volume: {}%", new_vol));
+                drop(state);
+                let _ = self.mpv.set_volume(new_vol);
+                return Ok(());
+            }
+            (KeyCode::Char('-'), KeyModifiers::NONE) => {
+                let new_vol = (state.volume - 5).max(0);
+                state.volume = new_vol;
+                state.notify(format!("Volume: {}%", new_vol));
+                drop(state);
+                let _ = self.mpv.set_volume(new_vol);
+                return Ok(());
+            }
+            // Shift+R to load a random queue from the server
+            (KeyCode::Char('R'), KeyModifiers::SHIFT) => {
+                drop(state);
+                return self.play_random_queue().await;
+            }
             // Ctrl+R to refresh data from server
             (KeyCode::Char('r'), KeyModifiers::CONTROL) => {
                 state.notify("Refreshing...");

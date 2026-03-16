@@ -8,6 +8,8 @@ use ratatui::{
     Frame,
 };
 
+use crate::ui::widgets::CoverArtWidget;
+
 use crate::app::state::AppState;
 use crate::ui::theme::ThemeColors;
 use crate::subsonic::models::{Album, Artist};
@@ -198,6 +200,21 @@ fn render_songs(frame: &mut Frame, area: Rect, state: &mut AppState, colors: &Th
         frame.render_widget(hint, area);
         return;
     }
+
+    // Split: top = cover art, bottom = song list.
+    // Height: aim for a roughly square image (half-blocks mean 2 pixel rows per terminal row,
+    // and cells are ~2× taller than wide, so width/2 rows gives an approximate square).
+    let art_h = (area.width / 3).clamp(5, 14);
+    let chunks = Layout::vertical([Constraint::Length(art_h), Constraint::Min(0)]).split(area);
+
+    // Render cover art
+    let cover_art_id: Option<String> = state.artists.songs.first().and_then(|s| s.cover_art.clone());
+    let img = cover_art_id.as_deref().and_then(|id| state.cover_art_cache.get(id));
+    let art_block = Block::default().borders(Borders::ALL).border_style(border_style);
+    frame.render_widget(CoverArtWidget::new(img).block(art_block), chunks[0]);
+
+    // Use the bottom chunk for the song list
+    let area = chunks[1];
 
     // Check if album has multiple discs
     let has_multiple_discs = artists

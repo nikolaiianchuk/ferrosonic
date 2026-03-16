@@ -90,7 +90,19 @@ impl MpvController {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(AudioError::MpvSpawn)?;
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    #[cfg(target_os = "macos")]
+                    return AudioError::MpvIpc(
+                        "mpv not found. Install it with: brew install mpv".to_string(),
+                    );
+                    #[cfg(not(target_os = "macos"))]
+                    return AudioError::MpvIpc(
+                        "mpv not found. Install it with your package manager (e.g. apt install mpv)".to_string(),
+                    );
+                }
+                AudioError::MpvSpawn(e)
+            })?;
 
         self.process = Some(child);
 

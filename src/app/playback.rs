@@ -352,6 +352,15 @@ impl App {
 
         self.preload_next_track(pos).await;
 
+        // Fetch cover art for the now-playing song
+        let cover_art_id = {
+            let state = self.state.read().await;
+            state.queue.get(pos).and_then(|s| s.cover_art.clone())
+        };
+        if let Some(id) = cover_art_id {
+            self.fetch_cover_art(id);
+        }
+
         Ok(())
     }
 
@@ -387,6 +396,38 @@ impl App {
                 }
             }
         }
+    }
+
+    /// Fill queue with random songs from server and start playing
+    pub(super) async fn play_random_queue(&mut self) -> Result<(), Error> {
+        let songs = if let Some(ref client) = self.subsonic {
+            match client.get_random_songs(500).await {
+                Ok(s) => s,
+                Err(e) => {
+                    let mut state = self.state.write().await;
+                    state.notify_error(format!("Failed to get random songs: {}", e));
+                    return Ok(());
+                }
+            }
+        } else {
+            return Ok(());
+        };
+
+        if songs.is_empty() {
+            let mut state = self.state.write().await;
+            state.notify_error("No songs returned from server");
+            return Ok(());
+        }
+
+        let count = songs.len();
+        {
+            let mut state = self.state.write().await;
+            state.queue.clear();
+            state.queue.extend(songs);
+            state.notify(format!("Random queue: {} songs", count));
+        }
+
+        self.play_queue_position(0).await
     }
 
     /// Stop playback and clear the queue

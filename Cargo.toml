@@ -42,6 +42,9 @@ md5 = "0.7"
 rand = "0.8"
 unicode-width = "0.2"
 
+# Image decoding for cover art
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

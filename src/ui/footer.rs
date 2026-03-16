@@ -45,6 +45,7 @@ impl<'a> Footer<'a> {
             ("p/Space", "Pause"),
             ("h", "Prev"),
             ("l", "Next"),
+            ("+/-", "Volume"),
             ("t", "Theme"),
         ];
 

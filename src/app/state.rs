@@ -295,8 +295,12 @@ pub struct AppState {
     pub settings_state: SettingsState,
     /// Current notification
     pub notification: Option<Notification>,
+    /// Decoded cover art images keyed by cover_art ID
+    pub cover_art_cache: std::collections::HashMap<String, image::DynamicImage>,
     /// Whether the app should quit
     pub should_quit: bool,
+    /// Current volume (0-100)
+    pub volume: i32,
     /// Cava visualizer screen content (rows of styled spans)
     pub cava_screen: Vec<CavaRow>,
     /// Whether the cava binary is available on the system
@@ -341,6 +345,7 @@ impl AppState {
         // Initialize cava from config
         state.settings_state.cava_enabled = config.cava;
         state.settings_state.cava_size = config.cava_size.clamp(10, 80);
+        state.volume = 100;
         state
     }
 

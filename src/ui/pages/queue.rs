@@ -1,7 +1,7 @@
 //! Queue page showing current play queue
 
 use ratatui::{
-    layout::Rect,
+    layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
@@ -9,6 +9,7 @@ use ratatui::{
 };
 
 use crate::app::state::AppState;
+use crate::ui::widgets::CoverArtWidget;
 
 
 /// Render the queue page
@@ -27,6 +28,23 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut AppState) {
         frame.render_widget(hint, area);
         return;
     }
+
+    // Split: left = queue list, right = cover art for now-playing song
+    let chunks =
+        Layout::horizontal([Constraint::Percentage(65), Constraint::Percentage(35)]).split(area);
+
+    let cover_art_id: Option<String> = state
+        .queue_position
+        .and_then(|pos| state.queue.get(pos))
+        .and_then(|s| s.cover_art.clone());
+    let img = cover_art_id.as_deref().and_then(|id| state.cover_art_cache.get(id));
+    let art_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Cover Art ")
+        .border_style(Style::default().fg(colors.border_unfocused));
+    frame.render_widget(CoverArtWidget::new(img).block(art_block), chunks[1]);
+
+    let area = chunks[0];
 
     let items: Vec<ListItem> = state
         .queue
