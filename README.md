@@ -44,8 +44,7 @@ Install dependencies via Homebrew, then download the latest precompiled binary:
 ```bash
 brew install mpv cava
 ```
-
-Then download the binary from the [releases page](https://github.com/jaidaken/ferrosonic/releases) and place it in your `$PATH`.
+Then build from source
 
 ### Quick Install
 
