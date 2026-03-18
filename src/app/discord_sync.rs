@@ -62,7 +62,7 @@ impl App {
                 if let Some(ref s) = song {
                     let end_timestamp = start_timestamp
                         .filter(|_| duration > 0.0)
-                        .map(|t| t + duration as u64);
+                        .map(|t| t + duration.round() as u64);
                     let _ = tx.try_send(DiscordMessage::Update(Activity {
                         details: s.title.clone(),
                         state: s.artist.clone().unwrap_or_default(),

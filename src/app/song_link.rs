@@ -7,7 +7,7 @@ impl App {
     /// Prefetch odesli info for a song in the background.
     /// Stores the result in odesli_cache and bumps odesli_cache_seq so that
     /// sync_discord picks up the thumbnail on its next tick.
-    pub fn fetch_odesli_info(&self, song: &Child) {
+    pub(super) fn fetch_odesli_info(&self, song: &Child) {
         let Some(client) = self.subsonic.clone() else { return };
 
         let state = self.state.clone();

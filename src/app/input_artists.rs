@@ -86,6 +86,8 @@ impl App {
                                 state.artists.songs = songs;
                                 state.artists.selected_song = Some(0);
                                 drop(state);
+                                // Fetch cover art for the album preview pane (not now-playing;
+                                // sync_cover_art handles the now-playing case separately)
                                 if let Some(id) = cover_art_id {
                                     self.fetch_cover_art(id);
                                 }
@@ -134,6 +136,8 @@ impl App {
                                 state.artists.songs = songs;
                                 state.artists.selected_song = Some(0);
                                 drop(state);
+                                // Fetch cover art for the album preview pane (not now-playing;
+                                // sync_cover_art handles the now-playing case separately)
                                 if let Some(id) = cover_art_id {
                                     self.fetch_cover_art(id);
                                 }
