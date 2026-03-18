@@ -136,6 +136,13 @@ impl App {
                     state.notify("No history to clear");
                 }
             }
+            KeyCode::Char('S') => {
+                if let Some(song) = state.queue_state.selected.and_then(|i| state.queue.get(i)).cloned() {
+                    drop(state);
+                    self.copy_song_link(&song);
+                    return Ok(());
+                }
+            }
             _ => {}
         }
 

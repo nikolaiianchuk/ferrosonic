@@ -330,6 +330,15 @@ impl App {
                     state.notify(format!("Playing {} songs next", count));
                 }
             }
+            KeyCode::Char('S') => {
+                if state.artists.focus == 1 {
+                    if let Some(song) = state.artists.selected_song.and_then(|i| state.artists.songs.get(i)).cloned() {
+                        drop(state);
+                        self.copy_song_link(&song);
+                        return Ok(());
+                    }
+                }
+            }
             _ => {}
         }
 

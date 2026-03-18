@@ -12,6 +12,7 @@ mod audio;
 mod config;
 mod error;
 mod mpris;
+mod odesli;
 mod subsonic;
 mod ui;
 

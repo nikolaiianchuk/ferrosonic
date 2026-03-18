@@ -159,6 +159,15 @@ impl App {
                     return self.play_queue_position(0).await;
                 }
             }
+            KeyCode::Char('S') => {
+                if state.playlists.focus == 1 {
+                    if let Some(song) = state.playlists.selected_song.and_then(|i| state.playlists.songs.get(i)).cloned() {
+                        drop(state);
+                        self.copy_song_link(&song);
+                        return Ok(());
+                    }
+                }
+            }
             _ => {}
         }
 

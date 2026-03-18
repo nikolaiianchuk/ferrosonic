@@ -1,6 +1,9 @@
 //! Subsonic API client
 
+use std::sync::Arc;
+
 use reqwest::Client;
+use tokio::sync::Mutex;
 use tracing::{debug, info};
 use url::Url;
 
@@ -24,6 +27,8 @@ pub struct SubsonicClient {
     password: String,
     /// HTTP client
     http: Client,
+    /// Cached Navidrome JWT token for native API calls
+    jwt_cache: Arc<Mutex<Option<String>>>,
 }
 
 impl SubsonicClient {
@@ -41,6 +46,7 @@ impl SubsonicClient {
             username: username.to_string(),
             password: password.to_string(),
             http,
+            jwt_cache: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -305,6 +311,91 @@ impl SubsonicClient {
         let songs = data.random_songs.song;
         debug!("Fetched {} random songs", songs.len());
         Ok(songs)
+    }
+
+    /// Obtain a Navidrome JWT, using the cached token if available.
+    async fn get_jwt(&self) -> Result<String, SubsonicError> {
+        let mut cache = self.jwt_cache.lock().await;
+        if let Some(ref token) = *cache {
+            return Ok(token.clone());
+        }
+
+        let login_url = self.base_url.join("auth/login")?;
+        let resp = self
+            .http
+            .post(login_url)
+            .json(&serde_json::json!({"username": self.username, "password": self.password}))
+            .send()
+            .await?;
+
+        let status = resp.status();
+        let text = resp.text().await?;
+
+        if !status.is_success() {
+            return Err(SubsonicError::Api {
+                code: status.as_u16() as i32,
+                message: format!("Navidrome login failed: {}", status),
+            });
+        }
+
+        #[derive(serde::Deserialize)]
+        struct LoginResponse {
+            token: String,
+        }
+        let parsed: LoginResponse = serde_json::from_str(&text)
+            .map_err(|e| SubsonicError::Parse(format!("Failed to parse login response: {}", e)))?;
+
+        *cache = Some(parsed.token.clone());
+        Ok(parsed.token)
+    }
+
+    /// Fetch ISRC for a song via Navidrome's /api/inspect endpoint.
+    pub async fn get_isrc(&self, song_id: &str) -> Result<Option<String>, SubsonicError> {
+        let token = self.get_jwt().await?;
+
+        let mut url = self.base_url.join("api/inspect")?;
+        url.query_pairs_mut().append_pair("id", song_id);
+
+        let response = self
+            .http
+            .get(url)
+            .header("x-nd-authorization", format!("Bearer {}", token))
+            .send()
+            .await?;
+        let status = response.status();
+        let text = response.text().await?;
+
+        if !status.is_success() {
+            return Err(SubsonicError::Api {
+                code: status.as_u16() as i32,
+                message: format!("Inspect endpoint returned {}", status),
+            });
+        }
+
+        #[derive(serde::Deserialize)]
+        struct InspectResponse {
+            #[serde(rename = "rawTags", default)]
+            raw_tags: std::collections::HashMap<String, Vec<String>>,
+        }
+
+        let parsed: InspectResponse = serde_json::from_str(&text)
+            .map_err(|e| SubsonicError::Parse(format!("Failed to parse inspect response: {}", e)))?;
+
+        Ok(["TSRC", "ISRC", "tsrc", "isrc"]
+            .iter()
+            .filter_map(|key| {
+                parsed
+                    .raw_tags
+                    .get(*key)
+                    .and_then(|vals| vals.iter().find(|s| !s.is_empty()))
+            })
+            .next()
+            .cloned())
+    }
+
+    /// Returns the underlying HTTP client for reuse by other modules.
+    pub fn http(&self) -> &Client {
+        &self.http
     }
 
     /// Get stream URL for a song

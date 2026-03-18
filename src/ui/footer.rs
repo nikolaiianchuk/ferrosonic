@@ -57,6 +57,7 @@ impl<'a> Footer<'a> {
                     ("e", "Add"),
                     ("n", "Add next"),
                     ("Enter", "Play"),
+                    ("S", "Copy link"),
                 ]);
             }
             Page::Queue => {
@@ -66,6 +67,7 @@ impl<'a> Footer<'a> {
                     ("r", "Shuffle"),
                     ("c", "Clear history"),
                     ("Enter", "Play"),
+                    ("S", "Copy link"),
                 ]);
             }
             Page::Playlists => {
@@ -75,6 +77,7 @@ impl<'a> Footer<'a> {
                     ("n", "Add next"),
                     ("r", "Shuffle play"),
                     ("Enter", "Play"),
+                    ("S", "Copy link"),
                 ]);
             }
             Page::Server => {
