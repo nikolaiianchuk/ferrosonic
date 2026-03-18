@@ -85,8 +85,12 @@ pub struct App {
     discord_odesli_seq: u64,
     /// Last song ID for which odesli info was fetched (change detection)
     odesli_song_id: Option<String>,
+    /// Last next-song ID for which odesli info was prefetched (change detection)
+    odesli_next_song_id: Option<String>,
     /// Last song ID for which cover art was fetched (change detection)
     cover_art_song_id: Option<String>,
+    /// Last next-song ID for which cover art was prefetched (change detection)
+    cover_art_next_song_id: Option<String>,
 }
 
 impl App {
@@ -126,7 +130,9 @@ impl App {
             discord_track_start: None,
             discord_odesli_seq: 0,
             odesli_song_id: None,
+            odesli_next_song_id: None,
             cover_art_song_id: None,
+            cover_art_next_song_id: None,
         }
     }
 
