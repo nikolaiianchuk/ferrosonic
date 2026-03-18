@@ -68,7 +68,8 @@ impl App {
                             // for gapless transitions (same album, same format)
                             let mut state = self.state.write().await;
                             state.queue_position = Some(next_pos);
-                            if let Some(song) = state.queue.get(next_pos).cloned() {
+                            let gapless_song = state.queue.get(next_pos).cloned();
+                            if let Some(ref song) = gapless_song {
                                 state.now_playing.song = Some(song.clone());
                                 state.now_playing.position = 0.0;
                                 state.now_playing.duration = song.duration.unwrap_or(0) as f64;
@@ -83,6 +84,10 @@ impl App {
 
                             // Preload the next track for continued gapless playback
                             self.preload_next_track(next_pos).await;
+
+                            if let Some(song) = gapless_song {
+                                self.notify_song_started(&song);
+                            }
                             return;
                         }
                     }
@@ -361,6 +366,8 @@ impl App {
             self.fetch_cover_art(id);
         }
 
+        self.notify_song_started(&song);
+
         Ok(())
     }
 
@@ -434,6 +441,10 @@ impl App {
     pub(super) async fn stop_playback(&mut self) -> Result<(), Error> {
         if let Err(e) = self.mpv.stop() {
             error!("Failed to stop: {}", e);
+        }
+
+        if let Some(ref tx) = self.discord_tx {
+            let _ = tx.try_send(DiscordMessage::Clear);
         }
 
         let mut state = self.state.write().await;

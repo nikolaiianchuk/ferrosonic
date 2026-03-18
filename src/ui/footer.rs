@@ -88,7 +88,7 @@ impl<'a> Footer<'a> {
                 ]);
             }
             Page::Settings => {
-                binds.extend([("←/→/Enter", "Change theme")]);
+                binds.extend([("←/→/Enter", "Change"), ("Enter", "Save text")]);
             }
         }
 

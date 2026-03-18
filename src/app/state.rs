@@ -187,7 +187,7 @@ pub struct ServerState {
 /// Settings page state
 #[derive(Debug, Clone)]
 pub struct SettingsState {
-    /// Currently focused field (0=Theme, 1=Cava)
+    /// Currently focused field (0=Theme, 1=Cava, 2=Cava Size, 3=Discord App ID)
     pub selected_field: usize,
     /// Available themes (Default + loaded from files)
     pub themes: Vec<ThemeData>,
@@ -197,6 +197,8 @@ pub struct SettingsState {
     pub cava_enabled: bool,
     /// Cava visualizer height percentage (10-80, step 5)
     pub cava_size: u8,
+    /// Discord Application ID text input buffer
+    pub discord_app_id_input: String,
 }
 
 impl Default for SettingsState {
@@ -207,6 +209,7 @@ impl Default for SettingsState {
             theme_index: 0,
             cava_enabled: false,
             cava_size: 40,
+            discord_app_id_input: String::new(),
         }
     }
 }
@@ -297,6 +300,8 @@ pub struct AppState {
     pub notification: Option<Notification>,
     /// Decoded cover art images keyed by cover_art ID
     pub cover_art_cache: std::collections::HashMap<String, image::DynamicImage>,
+    /// Cached odesli song info keyed by song ID
+    pub odesli_cache: std::collections::HashMap<String, crate::odesli::OdesliInfo>,
     /// Whether the app should quit
     pub should_quit: bool,
     /// Current volume (0-100)
@@ -345,6 +350,10 @@ impl AppState {
         // Initialize cava from config
         state.settings_state.cava_enabled = config.cava;
         state.settings_state.cava_size = config.cava_size.clamp(10, 80);
+        // Initialize Discord App ID input
+        if config.discord_app_id != 0 {
+            state.settings_state.discord_app_id_input = config.discord_app_id.to_string();
+        }
         state.volume = 100;
         state
     }

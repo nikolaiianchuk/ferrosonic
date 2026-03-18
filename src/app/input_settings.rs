@@ -4,6 +4,10 @@ use crate::error::Error;
 
 use super::*;
 
+/// Index of the Discord App ID field in the settings page.
+/// Update this if new fields are inserted before it.
+const DISCORD_FIELD: usize = 3;
+
 impl App {
     /// Handle settings page keys
     pub(super) async fn handle_settings_key(&mut self, key: event::KeyEvent) -> Result<(), Error> {
@@ -20,12 +24,27 @@ impl App {
                         state.settings_state.selected_field = field - 1;
                     }
                 }
-                KeyCode::Down | KeyCode::Char('j') => {
-                    if field < 2 {
-                        state.settings_state.selected_field = field + 1;
+                KeyCode::Down | KeyCode::Char('j') if field < DISCORD_FIELD => {
+                    state.settings_state.selected_field = field + 1;
+                }
+
+                // Text input for Discord App ID (field 3)
+                KeyCode::Char(c) if field == DISCORD_FIELD => {
+                    if c.is_ascii_digit() {
+                        state.settings_state.discord_app_id_input.push(c);
                     }
                 }
-                // Left
+                KeyCode::Backspace if field == DISCORD_FIELD => {
+                    state.settings_state.discord_app_id_input.pop();
+                }
+                KeyCode::Enter if field == DISCORD_FIELD => {
+                    let input = state.settings_state.discord_app_id_input.trim().to_string();
+                    let new_id: u64 = input.parse().unwrap_or(0);
+                    state.config.discord_app_id = new_id;
+                    config_changed = true;
+                }
+
+                // Left — applies to selector fields (0-2)
                 KeyCode::Left | KeyCode::Char('h') => match field {
                     0 => {
                         state.settings_state.prev_theme();
@@ -37,11 +56,7 @@ impl App {
                     1 if state.cava_available => {
                         state.settings_state.cava_enabled = !state.settings_state.cava_enabled;
                         state.config.cava = state.settings_state.cava_enabled;
-                        let status = if state.settings_state.cava_enabled {
-                            "On"
-                        } else {
-                            "Off"
-                        };
+                        let status = if state.settings_state.cava_enabled { "On" } else { "Off" };
                         state.notify(format!("Cava: {}", status));
                         config_changed = true;
                     }
@@ -57,7 +72,8 @@ impl App {
                     }
                     _ => {}
                 },
-                // Right / Enter / Space
+
+                // Right / Enter / Space — applies to selector fields (0-2)
                 KeyCode::Right | KeyCode::Char('l') | KeyCode::Enter | KeyCode::Char(' ') => {
                     match field {
                         0 => {
@@ -70,11 +86,7 @@ impl App {
                         1 if state.cava_available => {
                             state.settings_state.cava_enabled = !state.settings_state.cava_enabled;
                             state.config.cava = state.settings_state.cava_enabled;
-                            let status = if state.settings_state.cava_enabled {
-                                "On"
-                            } else {
-                                "Off"
-                            };
+                            let status = if state.settings_state.cava_enabled { "On" } else { "Off" };
                             state.notify(format!("Cava: {}", status));
                             config_changed = true;
                         }
@@ -96,8 +108,10 @@ impl App {
         }
 
         if config_changed {
-            // Save config
             let state = self.state.read().await;
+            let new_discord_id = state.config.discord_app_id;
+            let field = state.settings_state.selected_field;
+
             if let Err(e) = state.config.save_default() {
                 drop(state);
                 let mut state = self.state.write().await;
@@ -111,13 +125,26 @@ impl App {
                 let cs = state.settings_state.cava_size as u32;
                 let cava_running = self.cava_parser.is_some();
                 drop(state);
+
                 if cava_enabled {
-                    // (Re)start cava — picks up new theme colors or toggle-on
                     self.start_cava(&g, &h, cs);
                 } else if cava_running {
                     self.stop_cava();
                     let mut state = self.state.write().await;
                     state.cava_screen.clear();
+                }
+
+                // Start/restart Discord thread if the app ID changed
+                if field == DISCORD_FIELD {
+                    self.discord_tx = None; // drop old sender → old thread exits
+                    if new_discord_id != 0 {
+                        self.discord_tx = Some(crate::discord::start_discord_thread(new_discord_id));
+                        let mut state = self.state.write().await;
+                        state.notify(format!("Discord App ID saved ({})", new_discord_id));
+                    } else {
+                        let mut state = self.state.write().await;
+                        state.notify("Discord Rich Presence disabled");
+                    }
                 }
             }
         }

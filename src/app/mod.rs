@@ -16,6 +16,8 @@ mod mouse_playlists;
 mod playback;
 pub mod state;
 
+use crate::discord::DiscordMessage;
+
 use std::io;
 use std::time::Duration;
 
@@ -66,6 +68,8 @@ pub struct App {
     audio_rx: mpsc::Receiver<AudioAction>,
     /// MPRIS D-Bus server
     mpris_server: Option<mpris_server::Server<MprisPlayer>>,
+    /// Discord Rich Presence sender (None if not configured)
+    discord_tx: Option<std::sync::mpsc::SyncSender<DiscordMessage>>,
 }
 
 impl App {
@@ -99,6 +103,7 @@ impl App {
             last_click: None,
             audio_rx,
             mpris_server: None,
+            discord_tx: None,
         }
     }
 
@@ -122,6 +127,17 @@ impl App {
             }
             Err(e) => {
                 warn!("Failed to start MPRIS server: {} — media keys won't work", e);
+            }
+        }
+
+        // Start Discord Rich Presence if configured
+        {
+            let state = self.state.read().await;
+            let app_id = state.config.discord_app_id;
+            drop(state);
+            if app_id != 0 {
+                self.discord_tx = Some(crate::discord::start_discord_thread(app_id));
+                info!("Discord Rich Presence started");
             }
         }
 
