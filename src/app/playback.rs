@@ -85,9 +85,6 @@ impl App {
                             // Preload the next track for continued gapless playback
                             self.preload_next_track(next_pos).await;
 
-                            if let Some(song) = gapless_song {
-                                self.notify_song_started(&song);
-                            }
                             return;
                         }
                     }
@@ -357,17 +354,6 @@ impl App {
 
         self.preload_next_track(pos).await;
 
-        // Fetch cover art for the now-playing song
-        let cover_art_id = {
-            let state = self.state.read().await;
-            state.queue.get(pos).and_then(|s| s.cover_art.clone())
-        };
-        if let Some(id) = cover_art_id {
-            self.fetch_cover_art(id);
-        }
-
-        self.notify_song_started(&song);
-
         Ok(())
     }
 
@@ -441,10 +427,6 @@ impl App {
     pub(super) async fn stop_playback(&mut self) -> Result<(), Error> {
         if let Err(e) = self.mpv.stop() {
             error!("Failed to stop: {}", e);
-        }
-
-        if let Some(ref tx) = self.discord_tx {
-            let _ = tx.try_send(DiscordMessage::Clear);
         }
 
         let mut state = self.state.write().await;

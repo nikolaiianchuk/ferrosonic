@@ -225,8 +225,6 @@ impl App {
                                                 state.notify(format!("Playing album: {} ({} songs)", album_name, count));
                                                 drop(state);
 
-                                                self.notify_song_started(&first_song);
-
                                                 match stream_url {
                                                     Ok(url) => {
                                                         if self.mpv.is_paused().unwrap_or(false) {
@@ -271,8 +269,6 @@ impl App {
                             state.now_playing.channels = None;
                             state.notify(format!("Playing: {}", song.title));
                             drop(state);
-
-                            self.notify_song_started(&song);
 
                             if let Some(ref client) = self.subsonic {
                                 match client.get_stream_url(&song.id) {

@@ -3,6 +3,9 @@
 pub mod actions;
 mod cava;
 mod cover_art;
+mod cover_art_sync;
+mod discord_sync;
+mod odesli_sync;
 mod song_link;
 mod input;
 mod input_artists;
@@ -16,6 +19,7 @@ mod mouse_playlists;
 mod playback;
 pub mod state;
 
+use crate::app::state::PlaybackState;
 use crate::discord::DiscordMessage;
 
 use std::io;
@@ -70,6 +74,19 @@ pub struct App {
     mpris_server: Option<mpris_server::Server<MprisPlayer>>,
     /// Discord Rich Presence sender (None if not configured)
     discord_tx: Option<std::sync::mpsc::SyncSender<DiscordMessage>>,
+    /// Last song ID sent to Discord (change detection)
+    discord_song_id: Option<String>,
+    /// Last playback state sent to Discord (change detection)
+    discord_play_state: PlaybackState,
+    /// Wall-clock time at which position 0 of the current track occurred.
+    /// Used to compute the Discord elapsed-time timestamp.
+    discord_track_start: Option<std::time::SystemTime>,
+    /// odesli_cache_seq value at the last Discord send (thumbnail change detection)
+    discord_odesli_seq: u64,
+    /// Last song ID for which odesli info was fetched (change detection)
+    odesli_song_id: Option<String>,
+    /// Last song ID for which cover art was fetched (change detection)
+    cover_art_song_id: Option<String>,
 }
 
 impl App {
@@ -104,6 +121,12 @@ impl App {
             audio_rx,
             mpris_server: None,
             discord_tx: None,
+            discord_song_id: None,
+            discord_play_state: PlaybackState::Stopped,
+            discord_track_start: None,
+            discord_odesli_seq: 0,
+            odesli_song_id: None,
+            cover_art_song_id: None,
         }
     }
 
@@ -333,6 +356,11 @@ impl App {
                 last_playback_update = now;
                 self.update_playback_info().await;
             }
+
+            // Sync reactive observers with current playback state
+            self.sync_cover_art().await;
+            self.sync_odesli().await;
+            self.sync_discord().await;
 
             // Check for notification auto-clear (after 2 seconds)
             {

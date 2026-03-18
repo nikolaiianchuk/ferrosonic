@@ -302,6 +302,9 @@ pub struct AppState {
     pub cover_art_cache: std::collections::HashMap<String, image::DynamicImage>,
     /// Cached odesli song info keyed by song ID
     pub odesli_cache: std::collections::HashMap<String, crate::odesli::OdesliInfo>,
+    /// Incremented whenever a new entry is inserted into odesli_cache.
+    /// Used by sync_discord to detect thumbnail arrivals without extra channels.
+    pub odesli_cache_seq: u64,
     /// Whether the app should quit
     pub should_quit: bool,
     /// Current volume (0-100)

@@ -1,54 +1,22 @@
 //! Odesli prefetching and copy-to-clipboard
 
 use super::App;
-use crate::discord::{Activity, DiscordMessage};
 use crate::subsonic::models::Child;
 
 impl App {
-    /// Call on every song start. Sends an immediate Discord update (title + artist,
-    /// no thumbnail) then spawns a background task that fetches odesli info and
-    /// updates Discord again with the thumbnail once it is available.
-    ///
-    /// The two-send pattern is intentional: the first send is instant (no network),
-    /// the second adds the cover art after the odesli fetch completes.
-    pub fn notify_song_started(&self, song: &Child) {
-        if let Some(ref tx) = self.discord_tx {
-            let _ = tx.try_send(DiscordMessage::Update(Activity {
-                details: song.title.clone(),
-                state: song.artist.clone().unwrap_or_default(),
-                large_image: None,
-            }));
-        }
-        self.fetch_odesli_info(song);
-    }
-
     /// Prefetch odesli info for a song in the background.
-    /// Stores result in the odesli cache and updates Discord Rich Presence.
-    /// Called on every song change so that copy_song_link is instant.
-    fn fetch_odesli_info(&self, song: &Child) {
+    /// Stores the result in odesli_cache and bumps odesli_cache_seq so that
+    /// sync_discord picks up the thumbnail on its next tick.
+    pub fn fetch_odesli_info(&self, song: &Child) {
         let Some(client) = self.subsonic.clone() else { return };
 
         let state = self.state.clone();
-        let discord_tx = self.discord_tx.clone();
         let song_id = song.id.clone();
-        let song_title = song.title.clone();
-        let song_artist = song.artist.clone().unwrap_or_default();
 
         tokio::spawn(async move {
-            // Check cache first
-            {
-                let s = state.read().await;
-                if let Some(info) = s.odesli_cache.get(&song_id) {
-                    // Already cached — just update Discord
-                    if let Some(tx) = &discord_tx {
-                        let _ = tx.try_send(DiscordMessage::Update(Activity {
-                            details: song_title,
-                            state: song_artist,
-                            large_image: info.thumbnail_url.clone(),
-                        }));
-                    }
-                    return;
-                }
+            // Skip if already cached
+            if state.read().await.odesli_cache.contains_key(&song_id) {
+                return;
             }
 
             let isrc = match client.get_isrc(&song_id).await {
@@ -61,15 +29,9 @@ impl App {
                 _ => return,
             };
 
-            if let Some(tx) = &discord_tx {
-                let _ = tx.try_send(DiscordMessage::Update(Activity {
-                    details: song_title,
-                    state: song_artist,
-                    large_image: info.thumbnail_url.clone(),
-                }));
-            }
-
-            state.write().await.odesli_cache.insert(song_id, info);
+            let mut s = state.write().await;
+            s.odesli_cache.insert(song_id, info);
+            s.odesli_cache_seq += 1;
         });
     }
 
@@ -123,7 +85,9 @@ impl App {
                 };
 
                 let url = info.page_url.clone();
-                state.write().await.odesli_cache.insert(song_id, info);
+                let mut s = state.write().await;
+                s.odesli_cache.insert(song_id, info);
+                s.odesli_cache_seq += 1;
                 url
             };
 

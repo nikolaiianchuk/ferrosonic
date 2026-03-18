@@ -18,6 +18,12 @@ pub struct Activity {
     pub state: String,
     /// Thumbnail image URL
     pub large_image: Option<String>,
+    /// Unix timestamp of when playback started at position 0.
+    /// Combined with end_timestamp, Discord renders "0:23 / 3:45".
+    pub start_timestamp: Option<u64>,
+    /// Unix timestamp of when the track will end.
+    /// Combined with start_timestamp, Discord renders the full X:XX / Y:YY display.
+    pub end_timestamp: Option<u64>,
 }
 
 /// Messages sent to the Discord background thread
@@ -127,6 +133,15 @@ fn send_activity(stream: &mut UnixStream, activity: &Activity) -> std::io::Resul
     });
     if let Some(ref img) = activity.large_image {
         act["assets"] = serde_json::json!({ "large_image": img });
+    }
+    match (activity.start_timestamp, activity.end_timestamp) {
+        (Some(start), Some(end)) => {
+            act["timestamps"] = serde_json::json!({ "start": start, "end": end });
+        }
+        (Some(start), None) => {
+            act["timestamps"] = serde_json::json!({ "start": start });
+        }
+        _ => {}
     }
 
     let payload = serde_json::json!({
