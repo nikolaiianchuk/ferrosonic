@@ -62,6 +62,9 @@ vt100 = "0.15"
 # Clipboard
 arboard = "3"
 
+# Discord Rich Presence
+discord-rich-presence = "1"
+
 [profile.release]
 lto = true
 codegen-units = 1

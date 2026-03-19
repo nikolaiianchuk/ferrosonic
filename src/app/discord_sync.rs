@@ -34,10 +34,14 @@ impl App {
             return;
         }
 
-        // Thumbnail from odesli cache (present once fetch_odesli_info completes)
-        let thumbnail = song.as_ref().and_then(|s| {
-            state.odesli_cache.get(&s.id).and_then(|i| i.thumbnail_url.clone())
-        });
+        // Thumbnail and song.link URL from odesli cache (present once fetch_odesli_info completes)
+        let (thumbnail, song_link) = song.as_ref().map(|s| {
+            let info = state.odesli_cache.get(&s.id);
+            (
+                info.and_then(|i| i.thumbnail_url.clone()),
+                info.map(|i| i.page_url.clone()),
+            )
+        }).unwrap_or((None, None));
         drop(state);
 
         match play_state {
@@ -69,6 +73,7 @@ impl App {
                         large_image: thumbnail,
                         start_timestamp,
                         end_timestamp,
+                        song_link: song_link.clone(),
                     }));
                 }
 
