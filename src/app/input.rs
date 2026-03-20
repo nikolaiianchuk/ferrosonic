@@ -108,7 +108,7 @@ impl App {
                 state.config.theme = state.settings_state.theme_name().to_string();
                 let label = state.settings_state.theme_name().to_string();
                 state.notify(format!("Theme: {}", label));
-                let _ = state.config.save_default();
+                let _ = state.config.save_to_default_path();
                 let cava_enabled = state.settings_state.cava_enabled;
                 let td = state.settings_state.current_theme();
                 let g = td.cava_gradient.clone();

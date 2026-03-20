@@ -94,7 +94,7 @@ impl App {
                         let user = state.config.username.clone();
                         let pass = state.config.password.clone();
 
-                        match state.config.save_default() {
+                        match state.config.save_to_default_path() {
                             Ok(_) => {
                                 info!("Config saved successfully");
                                 state.server_state.status =

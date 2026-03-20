@@ -112,7 +112,7 @@ impl App {
             let new_discord_id = state.config.discord_app_id;
             let field = state.settings_state.selected_field;
 
-            if let Err(e) = state.config.save_default() {
+            if let Err(e) = state.config.save_to_default_path() {
                 drop(state);
                 let mut state = self.state.write().await;
                 state.notify_error(format!("Failed to save: {}", e));

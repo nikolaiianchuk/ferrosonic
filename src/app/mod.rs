@@ -146,6 +146,8 @@ impl App {
             drop(state);
         } else {
             info!("MPV started successfully, ready for playback");
+            let vol = self.state.read().await.volume;
+            let _ = self.mpv.set_volume(vol);
         }
 
         // Start MPRIS server for media key support
@@ -230,6 +232,13 @@ impl App {
 
         // Main event loop
         let result = self.event_loop(&mut terminal).await;
+
+        // Save volume to config on exit
+        {
+            let mut state = self.state.write().await;
+            state.config.volume = state.volume;
+            let _ = state.config.save_to_default_path();
+        }
 
         // Cleanup cava
         self.stop_cava();
@@ -349,6 +358,7 @@ impl App {
                     }
                     AudioAction::SetVolume(vol) => {
                         let _ = self.mpv.set_volume(vol);
+                        self.state.write().await.volume = vol.clamp(0, 100);
                     }
                 }
             }

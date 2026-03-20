@@ -105,7 +105,7 @@ async fn main() -> anyhow::Result<()> {
         }
         None => {
             info!("Loading default config");
-            Config::load_default().unwrap_or_else(|e| {
+            Config::load_from_default_path().unwrap_or_else(|e| {
                 info!("No config found ({}), using defaults", e);
                 Config::new()
             })

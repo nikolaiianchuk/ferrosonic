@@ -357,7 +357,7 @@ impl AppState {
         if config.discord_app_id != 0 {
             state.settings_state.discord_app_id_input = config.discord_app_id.to_string();
         }
-        state.volume = 100;
+        state.volume = config.volume.clamp(0, 100);
         state
     }
 

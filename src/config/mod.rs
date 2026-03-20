@@ -38,11 +38,19 @@ pub struct Config {
     /// Discord Application ID for Rich Presence (0 = disabled)
     #[serde(rename = "DiscordAppId", default)]
     pub discord_app_id: u64,
+
+    /// Volume level (0-100)
+    #[serde(rename = "Volume", default = "Config::default_volume")]
+    pub volume: i32,
 }
 
 impl Config {
     fn default_cava_size() -> u8 {
         40
+    }
+
+    fn default_volume() -> i32 {
+        100
     }
 
     /// Create a new empty config
@@ -51,7 +59,7 @@ impl Config {
     }
 
     /// Load config from the default location
-    pub fn load_default() -> Result<Self, ConfigError> {
+    pub fn load_from_default_path() -> Result<Self, ConfigError> {
         let path = paths::config_file().ok_or_else(|| ConfigError::NotFound {
             path: "default config location".to_string(),
         })?;
@@ -82,7 +90,7 @@ impl Config {
     }
 
     /// Save config to the default location
-    pub fn save_default(&self) -> Result<(), ConfigError> {
+    pub fn save_to_default_path(&self) -> Result<(), ConfigError> {
         let path = paths::config_file().ok_or_else(|| ConfigError::NotFound {
             path: "default config location".to_string(),
         })?;
