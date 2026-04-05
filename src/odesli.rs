@@ -32,18 +32,38 @@ pub async fn get_song_info(http: &reqwest::Client, isrc: &str) -> Result<Option<
 
     let json: serde_json::Value = response.json().await?;
 
-    let page_url = match json["pageUrl"].as_str() {
-        Some(u) => u.to_owned(),
+    let entities = match json["entitiesByUniqueId"].as_object() {
+        Some(e) => e,
         None => return Ok(None),
     };
 
-    let thumbnail_url = json["entitiesByUniqueId"]
-        .as_object()
-        .and_then(|entities| {
-            entities.values().find_map(|entity| {
-                entity["thumbnailUrl"].as_str().map(str::to_owned)
-            })
-        });
+    // Priority: Spotify > iTunes > Tidal > Amazon
+    // Build song.link short URLs from the entity id
+    let page_url = 'found: {
+        for (prefix, base) in &[
+            // ("SPOTIFY_SONG::", "https://song.link/s/"), <-- Recently there's been an issue with spotify-based IDs, so this will fall back to other services
+            ("ITUNES_SONG::", "https://song.link/i/"),
+            ("TIDAL_SONG::", "https://song.link/t/"),
+            ("AMAZON_SONG::", "https://song.link/a/"),
+        ] {
+            if let Some(entity) = entities.keys().find(|k| k.starts_with(prefix))
+                .and_then(|k| entities.get(k))
+            {
+                if let Some(id) = entity["id"].as_str() {
+                    break 'found format!("{}{}", base, id);
+                }
+            }
+        }
+        // Fall back to pageUrl if no preferred platform found
+        match json["pageUrl"].as_str() {
+            Some(u) => u.to_owned(),
+            None => return Ok(None),
+        }
+    };
+
+    let thumbnail_url = entities.values().find_map(|entity| {
+        entity["thumbnailUrl"].as_str().map(str::to_owned)
+    });
 
     Ok(Some(OdesliInfo { page_url, thumbnail_url }))
 }
